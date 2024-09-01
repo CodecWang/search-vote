@@ -65,7 +65,7 @@ export default forwardRef(() => {
     const dir = searchParams.get("dir");
     setIsVertical(dir === "h" ? false : true);
 
-    const defaultQuery = searchParams.get("q") ?? "hi";
+    const defaultQuery = searchParams.get("q") ?? "flowers";
     const encodedQuery = encodeURIComponent(defaultQuery);
 
     const engineMap: SearchEngineMap = {
@@ -264,8 +264,11 @@ export default forwardRef(() => {
           <DropdownMenu>
             <DropdownMenuTrigger>
               <Avatar>
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>CN</AvatarFallback>
+                <AvatarImage
+                  className="p-1"
+                  src="https://pickbold.com/wp-content/uploads/2022/02/bing-logo.png"
+                />
+                <AvatarFallback>B</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
