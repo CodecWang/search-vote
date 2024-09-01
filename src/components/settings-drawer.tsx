@@ -32,10 +32,8 @@ export default function SettingsDrawer({
     if (!open) return;
     if (!searchEngines?.length) return;
 
-    console.log("xxxx");
-
     searchEngines.forEach(([name, param]) => {
-      const url = new URL(param.url, "http://example.com");
+      const url = new URL(param.url, window.location.origin);
       searchParamsMap[name] = Array.from(url.searchParams);
     });
 
@@ -54,7 +52,6 @@ export default function SettingsDrawer({
     const params = searchParamsMap[name];
     searchParamsMap[name] = params.filter((p) => p[0] !== key);
     setSearchParamsMap({ ...searchParamsMap });
-    console.log(searchParamsMap);
   };
 
   const handleChangeParam = (
@@ -69,7 +66,7 @@ export default function SettingsDrawer({
   };
 
   const handleReset = (name: string, engine: SearchEngineParam) => {
-    const url = new URL(engine.url, "http://example.com");
+    const url = new URL(engine.url, window.location.origin);
     searchParamsMap[name] = Array.from(url.searchParams);
     setSearchParamsMap({ ...searchParamsMap });
   };
@@ -139,7 +136,6 @@ export default function SettingsDrawer({
         <DrawerFooter>
           <Button
             onClick={() => {
-              console.log(searchParamsMap);
               onSubmit(searchParamsMap);
               onOpenChange(false);
             }}

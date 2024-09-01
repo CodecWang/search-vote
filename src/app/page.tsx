@@ -176,31 +176,20 @@ export default forwardRef(() => {
     },
     isClean = true
   ) => {
-    setAllEnginesMap((prevEngines) =>
-      Object.entries(searchParamsMap).reduce((acc, [name, param]) => {
-        const engine = prevEngines[name];
-        const isRelativeUrl =
-          name === EngineName.Baidu || name === EngineName.DuckDuckGo;
-        const url = isRelativeUrl
-          ? new URL(engine.url, "http://example.com")
-          : new URL(engine.url);
+    Object.entries(searchParamsMap).forEach(([name, param]) => {
+      const url = new URL(allEnginesMap[name].url, window.location.origin);
+      isClean && (url.search = "");
+      param.forEach(([key, value]) => {
+        if (key) {
+          url.searchParams.set(key, value);
+        }
+      });
 
-        // Clear all existing search parameters
-        isClean && (url.search = "");
-        param.forEach(([key, value]) => {
-          if (key) {
-            url.searchParams.set(key, value);
-          }
-        });
-
-        const newUrl = isRelativeUrl
-          ? url.toString().replace("http://example.com", "")
-          : url.toString();
-
-        acc[name] = { ...engine, url: newUrl };
-        return acc;
-      }, {})
-    );
+      setAllEnginesMap((prevEngines) => ({
+        ...prevEngines,
+        [name]: { ...prevEngines[name], url: url.toString() },
+      }));
+    });
   };
 
   return (
@@ -268,7 +257,7 @@ export default forwardRef(() => {
                   className="p-1"
                   src="https://pickbold.com/wp-content/uploads/2022/02/bing-logo.png"
                 />
-                <AvatarFallback>B</AvatarFallback>
+                <AvatarFallback>CN</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
