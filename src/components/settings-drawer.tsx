@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerContent,
@@ -5,11 +8,10 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
 import AddIcon from "@/icons/add-icon";
-import { useEffect, useState } from "react";
-import { Input } from "./ui/input";
 import CloseIcon from "@/icons/close-icon";
+
+import { Input } from "./ui/input";
 
 interface SettingsDrawerProps {
   open: boolean;

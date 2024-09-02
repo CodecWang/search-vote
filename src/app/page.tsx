@@ -1,40 +1,42 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import React from "react";
+import { useEffect, useRef, useState } from "react";
+import { ImperativePanelGroupHandle } from "react-resizable-panels";
+
+import SettingsDrawer from "@/components/settings-drawer";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import React from "react";
-import { forwardRef, useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ImperativePanelGroupHandle } from "react-resizable-panels";
+import { Toaster } from "@/components/ui/toaster";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import GoogleIcon from "@/icons/google-icon";
+import { useToast } from "@/hooks/use-toast";
+import AddIcon from "@/icons/add-icon";
 import BaiduIcon from "@/icons/baidu-icon";
 import BingIcon from "@/icons/bing-icon";
-import DuckDuckGoIcon from "@/icons/duck-duck-go-icon";
-import AddIcon from "@/icons/add-icon";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu";
-import { useSearchParams } from "next/navigation";
-import SettingsIcon from "@/icons/settings-icon";
-import SettingsDrawer from "@/components/settings-drawer";
-import { Toaster } from "@/components/ui/toaster";
 import CloseIcon from "@/icons/close-icon";
-import { useToast } from "@/hooks/use-toast";
-import Link from "next/link";
+import DuckDuckGoIcon from "@/icons/duck-duck-go-icon";
+import GoogleIcon from "@/icons/google-icon";
+import SettingsIcon from "@/icons/settings-icon";
 
 enum EngineName {
   Bing = "bing",
@@ -43,8 +45,9 @@ enum EngineName {
   DuckDuckGo = "duckduckgo",
 }
 
-export default forwardRef(() => {
+export default function Home() {
   const { toast } = useToast();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const timeoutRef = useRef({} as NodeJS.Timeout);
@@ -61,41 +64,46 @@ export default forwardRef(() => {
     [string, SearchEngineParam][]
   >([]);
 
+  const isInitialLoad = useRef(true);
+
   useEffect(() => {
+    if (!isInitialLoad.current) return;
+
     const dir = searchParams.get("dir");
     setIsVertical(dir === "h" ? false : true);
 
     const defaultQuery = searchParams.get("q") ?? "flowers";
-    const encodedQuery = encodeURIComponent(defaultQuery);
+    const decodedQuery = decodeURIComponent(defaultQuery);
 
     const engineMap: SearchEngineMap = {
       [EngineName.Bing]: {
-        url: `https://www.bing.com/search?q=${encodedQuery}`,
+        url: `https://www.bing.com/search?q=${decodedQuery}`,
         icon: BingIcon,
         selected: true,
         ref: React.createRef(),
       },
       [EngineName.Google]: {
         // igu: ignore user/iframe google url
-        url: `https://www.google.com/search?igu=1&q=${encodedQuery}&hl=en`,
+        url: `https://www.google.com/search?igu=1&q=${decodedQuery}&hl=en`,
         icon: GoogleIcon,
         selected: true,
         ref: React.createRef(),
       },
       [EngineName.Baidu]: {
-        url: `/api/baidu/s?wd=${encodedQuery}`,
+        url: `/api/baidu/s?wd=${decodedQuery}`,
         icon: BaiduIcon,
         ref: React.createRef(),
       },
       [EngineName.DuckDuckGo]: {
-        url: `/api/duckduckgo/?q=${encodedQuery}`,
+        url: `/api/duckduckgo/?q=${decodedQuery}`,
         icon: DuckDuckGoIcon,
         ref: React.createRef(),
       },
     };
 
     setAllEnginesMap(engineMap);
-  }, []);
+    isInitialLoad.current = false;
+  }, [searchParams]);
 
   useEffect(() => {
     setSelectedEngines(
@@ -122,14 +130,16 @@ export default forwardRef(() => {
   const handleInputKeyDown = (event: React.KeyboardEvent) => {
     if (event.key !== "Enter") return;
 
-    const encodedQuery = encodeURIComponent(
-      (event.target as HTMLInputElement).value
-    );
+    const newQuery = (event.target as HTMLInputElement).value;
+    const params = new URLSearchParams(searchParams);
+    params.set("q", newQuery);
+    router.push(`?${params.toString()}`);
+
     const searchParamsMap = {
-      [EngineName.Bing]: [["q", encodedQuery]],
-      [EngineName.Google]: [["q", encodedQuery]],
-      [EngineName.Baidu]: [["wd", encodedQuery]],
-      [EngineName.DuckDuckGo]: [["q", encodedQuery]],
+      [EngineName.Bing]: [["q", newQuery]],
+      [EngineName.Google]: [["q", newQuery]],
+      [EngineName.Baidu]: [["wd", newQuery]],
+      [EngineName.DuckDuckGo]: [["q", newQuery]],
     };
 
     handleParamsChange(searchParamsMap, false);
@@ -340,10 +350,10 @@ export default forwardRef(() => {
               <AddIcon className="size-5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              {Object.entries(allEnginesMap).map(([name, param]) => (
+              {Object.entries(allEnginesMap).map(([name, param], index) => (
                 <DropdownMenuItem
                   onSelect={() => handleAddEngine(name, param)}
-                  key={name}
+                  key={index}
                   disabled={param.selected}
                 >
                   <param.icon className="size-4 mr-2" />
@@ -363,4 +373,4 @@ export default forwardRef(() => {
       <Toaster />
     </div>
   );
-});
+}
