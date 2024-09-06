@@ -31,7 +31,6 @@ app.use(
   })
 );
 
-// 启动服务器
 app.listen(3002, () => {
-  console.log("Proxy server is running on http://localhost:3000");
+  console.log("Proxy server is running on http://localhost:3002");
 });

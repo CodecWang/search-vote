@@ -15,9 +15,9 @@ import { Input } from "./ui/input";
 
 interface SettingsDrawerProps {
   open: boolean;
-  onSubmit: (searchParamsMap: { [key: string]: [string, string][] }) => void;
+  searchEngines: SearchEngine[];
   onOpenChange: (open: boolean) => void;
-  searchEngines: [string, SearchEngineParam][];
+  onSubmit: (urlParamsMap: UrlParamsMap) => void;
 }
 
 export default function SettingsDrawer({
@@ -26,51 +26,53 @@ export default function SettingsDrawer({
   onOpenChange,
   searchEngines,
 }: SettingsDrawerProps) {
-  const [searchParamsMap, setSearchParamsMap] = useState<{
-    [key: string]: [string, string][];
-  }>({});
+  const [urlParamsMap, setUrlParamsMap] = useState<UrlParamsMap>({});
 
   useEffect(() => {
     if (!open) return;
-    if (!searchEngines?.length) return;
+    if (!searchEngines.length) return;
 
-    searchEngines.forEach(([name, param]) => {
-      const url = new URL(param.url, window.location.origin);
-      searchParamsMap[name] = Array.from(url.searchParams);
-    });
+    setUrlParamsMap(
+      searchEngines.reduce((acc: UrlParamsMap, engine) => {
+        const url = new URL(engine.url, window.location.origin);
+        acc[engine.key] = Array.from(url.searchParams);
+        return acc;
+      }, {})
+    );
+  }, [open, searchEngines]);
 
-    setSearchParamsMap({ ...searchParamsMap });
-  }, [open]);
-
-  const hanldeAddParam = (name: string) => {
-    const params = searchParamsMap[name];
+  const addParam = (key: number) => {
+    const params = urlParamsMap[key];
     if (params.find(([key]) => key === "")) return;
 
     params.push(["", ""]);
-    setSearchParamsMap({ ...searchParamsMap });
+    setUrlParamsMap({ ...urlParamsMap });
   };
 
-  const handleRemoveParam = (name: string, key: string) => {
-    const params = searchParamsMap[name];
-    searchParamsMap[name] = params.filter((p) => p[0] !== key);
-    setSearchParamsMap({ ...searchParamsMap });
+  const removeParam = (engineKey: number, key: string) => {
+    const params = urlParamsMap[engineKey];
+    urlParamsMap[engineKey] = params.filter((p) => p[0] !== key);
+    setUrlParamsMap({ ...urlParamsMap });
   };
 
-  const handleChangeParam = (
-    name: string,
+  const changeParam = (
+    engineKey: number,
     index: number,
     value: string,
     isKey: boolean
   ) => {
-    const params = searchParamsMap[name];
+    const params = urlParamsMap[engineKey];
     params[index][isKey ? 0 : 1] = value;
-    setSearchParamsMap({ ...searchParamsMap });
+    setUrlParamsMap({ ...urlParamsMap });
   };
 
-  const handleReset = (name: string, engine: SearchEngineParam) => {
+  const resetParams = (key: number) => {
+    const engine = searchEngines.find((engine) => engine.key === key);
+    if (!engine) return;
+
     const url = new URL(engine.url, window.location.origin);
-    searchParamsMap[name] = Array.from(url.searchParams);
-    setSearchParamsMap({ ...searchParamsMap });
+    urlParamsMap[key] = Array.from(url.searchParams);
+    setUrlParamsMap({ ...urlParamsMap });
   };
 
   return (
@@ -80,35 +82,35 @@ export default function SettingsDrawer({
           <DrawerTitle>Search engine settings</DrawerTitle>
         </DrawerHeader>
         <div className="flex flex-wrap gap-4 px-4 py-2">
-          {searchEngines.map(([name, param]) => (
+          {searchEngines.map((engine) => (
             <div
-              key={name}
+              key={engine.key}
               className="flex-1 bg-zinc-50 dark:bg-zinc-900 rounded-lg min-w-64 p-3"
             >
-              <param.icon className="size-5" />
+              <engine.icon className="size-5" />
 
               <div className="items-center space-y-1 mt-2">
-                {searchParamsMap[name]?.map(([key, value], index) => (
+                {urlParamsMap[engine.key]?.map(([key, value], index) => (
                   <div className="flex items-center gap-1" key={index}>
                     <Input
                       defaultValue={key}
                       className="w-20"
                       placeholder="setflight"
                       onChange={(e) =>
-                        handleChangeParam(name, index, e.target.value, true)
+                        changeParam(engine.key, index, e.target.value, true)
                       }
                     ></Input>
                     <Input
                       defaultValue={value}
                       placeholder="xxx"
                       onChange={(e) =>
-                        handleChangeParam(name, index, e.target.value, false)
+                        changeParam(engine.key, index, e.target.value, false)
                       }
                     ></Input>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleRemoveParam(name, key)}
+                      onClick={() => removeParam(engine.key, key)}
                     >
                       <CloseIcon className="size-4" />
                     </Button>
@@ -119,7 +121,7 @@ export default function SettingsDrawer({
                 className="mt-1"
                 variant="outline"
                 size="icon"
-                onClick={() => hanldeAddParam(name)}
+                onClick={() => addParam(engine.key)}
               >
                 <AddIcon className="size-4" />
               </Button>
@@ -127,7 +129,7 @@ export default function SettingsDrawer({
                 <Button
                   className="mt-1"
                   variant="secondary"
-                  onClick={() => handleReset(name, param)}
+                  onClick={() => resetParams(engine.key)}
                 >
                   Reset
                 </Button>
@@ -138,7 +140,7 @@ export default function SettingsDrawer({
         <DrawerFooter>
           <Button
             onClick={() => {
-              onSubmit(searchParamsMap);
+              onSubmit(urlParamsMap);
               onOpenChange(false);
             }}
           >
